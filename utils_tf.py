@@ -121,8 +121,6 @@ def make_dataset(self, data):
 
 WindowGenerator.make_dataset = make_dataset
 
-linear = tf.keras.Sequential([tf.keras.layers.Dense(units=1)])
-
 MAX_EPOCHS = 20
 
 
@@ -165,9 +163,11 @@ def test(self):
 def example(self):
     """Get and cache an example batch of `inputs, labels` for plotting."""
     result = getattr(self, "_example", None)
+    print("get attr")
     if result is None:
-        # No example batch was found, so get one from the `.train` dataset
-        result = next(iter(self.train))
+        # No example batch was found, so get one from the `.val` dataset
+        result = next(iter(self.val))
+        print("none")
         # And cache it for next time
         self._example = result
     return result
