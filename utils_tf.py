@@ -11,10 +11,12 @@ import seaborn as sns
 
 # This file is used to configure settings use for training
 
-path = "./data/all_data.csv"
+# path = "./data/all_data.csv"
+path = "./data/data_temp_hum_hol.csv"
 df = pd.read_csv(path)
 
-df_cons = df[["y"]]
+# df_cons = df[["y"]]
+df_cons = df[["y", "Temperature", "Humidity", "Sealevel Pressure", "Holiday"]]
 df_cons = df_cons.dropna()
 
 # column_indices = {name: i for i, name in enumerate(df_cons.columns)}
