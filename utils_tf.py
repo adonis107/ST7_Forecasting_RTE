@@ -11,12 +11,14 @@ import seaborn as sns
 
 # This file is used to configure settings use for training
 
-# path = "./data/all_data.csv"
-path = "./data/data_temp_hum_hol.csv"
+path = "./data/all_data.csv"
+# path = "./data/data_temp_hum_hol.csv"
+
 df = pd.read_csv(path)
 
-# df_cons = df[["y"]]
-df_cons = df[["y", "Temperature", "Humidity", "Sealevel Pressure", "Holiday"]]
+df_cons = df[["y"]]
+# df_cons = df[["y", "Temperature", "Humidity", "Sealevel Pressure", "Holiday"]]
+
 df_cons = df_cons.dropna()
 
 # column_indices = {name: i for i, name in enumerate(df_cons.columns)}
@@ -250,3 +252,82 @@ def plot_error_hist(self, model=None, plot_col="y", n=1, absolute=False, bins=30
 
 
 WindowGenerator.plot_error_hist = plot_error_hist
+
+
+def compare_error_hist(
+    self,
+    models=None,
+    label=None,
+    plot_col="y",
+    bins=30,
+):
+    n = 0
+    inputs, labels = self.example
+    if models is not None:
+        for model in models:
+            predictions = model(inputs)
+            error = predictions - labels
+            e = error[0].numpy()
+            for i in range(1, 32):
+                e = np.append(e, error[i].numpy())
+            plt.hist(e, alpha=0.7, bins=bins, label=label[n])
+            n += 1
+    plt.legend(loc="upper right")
+    return
+
+
+WindowGenerator.compare_error_hist = compare_error_hist
+
+
+class FeedBack(tf.keras.Model):
+    def __init__(self, units, out_steps):
+        super().__init__()
+        self.out_steps = out_steps
+        self.units = units
+        self.lstm_cell = tf.keras.layers.LSTMCell(units)
+        # Also wrap the LSTMCell in an RNN to simplify the `warmup` method.
+        self.lstm_rnn = tf.keras.layers.RNN(self.lstm_cell, return_state=True)
+        self.dense = tf.keras.layers.Dense(num_features)
+
+
+def warmup(self, inputs):
+    # inputs.shape => (batch, time, features)
+    # x.shape => (batch, lstm_units)
+    x, *state = self.lstm_rnn(inputs)
+
+    # predictions.shape => (batch, features)
+    prediction = self.dense(x)
+    return prediction, state
+
+
+FeedBack.warmup = warmup
+
+
+def call(self, inputs, training=None):
+    # Use a TensorArray to capture dynamically unrolled outputs.
+    predictions = []
+    # Initialize the LSTM state.
+    prediction, state = self.warmup(inputs)
+
+    # Insert the first prediction.
+    predictions.append(prediction)
+
+    # Run the rest of the prediction steps.
+    for n in range(1, self.out_steps):
+        # Use the last prediction as input.
+        x = prediction
+        # Execute one lstm step.
+        x, state = self.lstm_cell(x, states=state, training=training)
+        # Convert the lstm output to a prediction.
+        prediction = self.dense(x)
+        # Add the prediction to the output.
+        predictions.append(prediction)
+
+    # predictions.shape => (time, batch, features)
+    predictions = tf.stack(predictions)
+    # predictions.shape => (batch, time, features)
+    predictions = tf.transpose(predictions, [1, 0, 2])
+    return predictions
+
+
+FeedBack.call = call
